@@ -1,0 +1,33 @@
+algorithm for multilevel refining of a tetrahedron:
+
+Initialize a data structure to store the local and global node numbers.
+Start with an initial tetrahedron with vertices (v1, v2, v3, v4) and coordinates (coords(1:4,1:3)).
+coords is a 10 row by 3 column array. Each row representing a node and the columns the x,y,z coords
+10 nodes -> 4 main nodes, 6 midpoint nodes
+For the desired number of levels of refinement:
+
+a. For each tetrahedron in the current level:
+i.  Assign global node numbers to the midpoints
+ii. Calculate the node coordinate for the midpoints by adding the respective coordinates 
+    for the nearest vertices and dividing by 2
+iii.Carve out the elements for the next level -> 4 sub-tetrahedrons connected to the vertices and an
+    octahedron in the centre. 4 other tetrahedrons are carved out from this octahedron by connecting 
+    the midpoints alone of the original tetrahedron (these 4 tetrahedrons are smaller than the ones
+    carved out from the vertices)
+b. Replace the current level's tetrahedrons with the newly divided ones.
+
+
+gfortran ./modules/geometry_mod.f90 tetrahedron_refine.f90 -o tetrahedron_refine.out -I ./modules -J ./compiled_modules
+
+gfortran ./modules/visualization.f90 visualize_mesh.f90 -o visualize_mesh.out -I ./modules -J ./compiled_modules
+
+SRC = /path/to/project/src
+OBJ = /path/to/project/obj
+BIN = /path/to/project/bin
+
+gfortran -J$(OBJ) -c $(SRC)/bar.f90 -o $(OBJ)/bar.o
+gfortran -I$(OBJ) -c $(SRC)/foo.f90 -o $(OBJ)/foo.o
+gfortran -o $(BIN)/foo.exe $(OBJ)/foo.o $(OBJ)/bar.o
+
+
+gfortran visualization.f90 visualize_mesh.f90 -o visualize_mesh.out -J ./compiled_modules

@@ -1,0 +1,5 @@
+*.out
+*.o
+*.mod
+./src/compiled_modules/*
+./src/output/*
