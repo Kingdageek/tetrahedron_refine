@@ -1,0 +1,7 @@
+*.out
+*.o
+*.mod
+*.exe
+./src/compiled_modules/
+./src/output/
+./src/input/
