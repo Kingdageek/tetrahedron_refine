@@ -1,5 +1,6 @@
 program visualize_mesh
    use visualization
+   use helpers
    implicit none
 
    ! Specify total number of levels
@@ -20,7 +21,7 @@ program visualize_mesh
    integer :: num_nodes, num_elements, level
 !    integer :: file_status
    integer :: i, j, k
-   character(len=28) :: element_filename, nodes_filename
+   character(len=100) :: element_filename, nodes_filename, old_mesh_nodes_filename
 !    character(100) :: line            ! Character buffer to hold each line of input
 
    write(*,*) "########### MESH VISUALIZATION PROGRAM ##########"
@@ -31,20 +32,29 @@ program visualize_mesh
 
    write(element_filename, "(A18,I1,A4)") "./output/elements_", level, ".dat"
    nodes_filename = "./output/nodes.dat"
+   old_mesh_nodes_filename = "./input/nodes.dat"
    ! These calculations will only work for uniform refinement, i.e. no one element in
    ! these level was further refined without refining the others
    ! calculate total number of elements expected for specified level
-   num_elements = (8 ** (level-1))
+   ! num_elements = (8 ** (level-1))
+   ! just count the elements in the file
+   call countLines(element_filename, num_elements)
    ! calculate total number of nodes expected for specified level
    ! Some loop to do this.
    ! Level 1: ! element. 4 nodes. adds 6 midpoint nodes and then has 10 total nodes
    ! Level 2: 8 elements out of 1. each adding 6 midpoint nodes + nodes from previous level
+   ! This only applicable if no elements or nodes at the start
    ! num_nodes_i (num_nodes at level i) = 8**(i-1) * 6 + (num_nodes_(i-1))
+   ! For old mesh:
+   ! num_nodes_i (num_nodes at level_i) = 8**i * 6 + num_nodes_(i-1)
 
-   num_nodes = 4
+   ! start with the number of nodes from the old input mesh
+   call countLines(old_mesh_nodes_filename, num_nodes)
+   write(*,*) "before calculating: num_nodes is ", num_nodes
    do i = 1, level
-      num_nodes = 8**(i-1) * 6 + num_nodes
+      num_nodes = 8**(i) * 6 + num_nodes
    enddo
+   write(*,*) "after calculating: num_nodes is ", num_nodes
 
    ! allocate space for element_arr and node_coords
    ! 4 nodes per element
@@ -52,15 +62,6 @@ program visualize_mesh
 
    ! 3 cartesian directions for coordinates (x,y,z)
    allocate(node_coords(num_nodes, 3))
-
-
-!    i = 0                             ! Initialize row counter
-!    do        ! Loop over lines in file until end of file is reached
-!       i = i + 1                      ! Increment row counter
-!       read(10,'(A)',iostat=file_status) line  ! Read line of input as character string
-!       if (file_status /= 0) exit         ! Exit loop if there is an error reading the line
-!       read(line,*) j, k, (element_arr(i,j), j=1,4) ! Read four integers from the line and store them in the ith row of the data array
-!    end do
 
    ! To generate element_arr and node_coords
    open(unit=42, file=element_filename, status='old', action='read')

@@ -1,5 +1,6 @@
 program tetrahedron_refine
    use geometry_mod
+   use helpers
    implicit none
 
 !    type tetrahedron
@@ -33,37 +34,69 @@ program tetrahedron_refine
 !    integer :: nodes_per_element = 10
    character(len=128) :: elem_filename, hanging_nodes_filename, nodes_filename
    character(len=9) :: output_dir = "./output/"
+   ! To parse the input mesh
+   double precision, dimension(:,:), allocatable :: parsed_nodes
+   character(len=128) :: elem_inputfile, nodes_inputfile
+   character(len=8) :: input_dir = "./input/"
+   ! use to track elements in old mesh, not updated for continued meshing
+   integer :: num_elements
 
-   ! Initialize the largest tetrahedron -> coarsest mesh
-   allocate(current_level(1))
+   elem_inputfile = input_dir // "elements.dat"
+   nodes_inputfile = input_dir // "nodes.dat"
+
+   write(*,*) "##### MESH REFINEMENT PROGRAM #####"
+   write(*,*) "Please ensure the node and element files are in input folder, are properly named, and structured"
+   ! Get the desired number of levels of refinement
+   write(*,*) "Enter number of levels: "
+   read(*,*) num_levels
+
+   write(*,*) "Trying to parse nodes and elements of old mesh..."
+
+   call countLines(nodes_inputfile, num_nodes)
+   call countLines(elem_inputfile, num_elements)
+   ! allocate nodes array from num_nodes (num_nodes * 3) arr. x,y,z
+   allocate(parsed_nodes(num_nodes, 3))
+
+   call parse_nodes(parsed_nodes, num_nodes, nodes_inputfile)
+   write(*,*) "Parsing nodes successful..."
+   ! Initialize the largest tetrahedron -> coarsest (old) mesh
+   allocate(current_level(num_elements))
+   ! assigns elements based on the nodes and initializes the coordinates of the nodes for elements
+   call parse_elements(current_level, parsed_nodes, num_elements, elem_inputfile)
+   write(*,*) "Parsing elements successful..."
    ! global node numbers
-   current_level(1)%v1 = 1
-   current_level(1)%v2 = 2
-   current_level(1)%v3 = 3
-   current_level(1)%v4 = 4
+   ! current_level(1)%v1 = 1
+   ! current_level(1)%v2 = 2
+   ! current_level(1)%v3 = 3
+   ! current_level(1)%v4 = 4
 
-   ! initialize the coordinates of the vertice nodes
-   current_level(1)%coords(1,:) = (/0.0d+0, 0.0d+0, 2.0d+0/)
-   current_level(1)%coords(2,:) = (/2.0d+0, 0.0d+0, 0.0d+0/)
-   current_level(1)%coords(3,:) = (/0.0d+0, 0.0d+0, 0.0d+0/)
-   current_level(1)%coords(4,:) = (/1.0d+0, 2.0d+0, 1.0d+0/)
-   ! tracks total number of nodes created
-   num_nodes = 0
+   ! ! initialize the coordinates of the vertice nodes
+   ! current_level(1)%coords(1,:) = (/0.0d+0, 0.0d+0, 2.0d+0/)
+   ! current_level(1)%coords(2,:) = (/2.0d+0, 0.0d+0, 0.0d+0/)
+   ! current_level(1)%coords(3,:) = (/0.0d+0, 0.0d+0, 0.0d+0/)
+   ! current_level(1)%coords(4,:) = (/1.0d+0, 2.0d+0, 1.0d+0/)
+   ! ! tracks total number of nodes created
+   ! num_nodes = 0
 
    nodes_filename = output_dir // "nodes.dat"
    ! Open the output file to save the nodes and their coordinates
    open(unit=19, file=nodes_filename, access="sequential")
    ! just fill for the coarsest mesh vertice nodes just 4. without the midpoint nodes
-   do k=1, 4
-      num_nodes = num_nodes + 1
-      ! Format: global_node_num   local_node_num  x   y   z
-      write(19, *) num_nodes, k, current_level(1)%coords(k,:)
+   ! do k=1, 4
+   !    num_nodes = num_nodes + 1
+   !    ! Format: global_node_num   local_node_num  x   y   z
+   !    write(19, *) num_nodes, k, current_level(1)%coords(k,:)
+   ! enddo
+
+   ! print current nodes and their coords to the output node file
+   do j=1, num_nodes
+      ! num_nodes = num_nodes + 1
+      ! Format: global_node_num   local_node_num_(default of 0)  x   y   z
+      write(19, *) j, 0, parsed_nodes(j,1:)
    enddo
 
-   ! Get the desired number of levels of refinement
-   read(*,*) num_levels
-
    do curr_level = 1, num_levels
+      write(*,*) "Refining level: ", curr_level
       write(hanging_nodes_filename, "(A9,A13,I1,A4)") output_dir, "hangingnodes_", curr_level, ".dat"
       ! Open the output file to save the hanging nodes
       open(unit=20, file=hanging_nodes_filename, access='sequential')
@@ -268,10 +301,11 @@ program tetrahedron_refine
    ! close nodes file after the specified number of levels have all been processed
    close(19)
    ! Print the data structure with the local and global node numbers for the refined tetrahedron
-   do i = 1, size(current_level)
-      write(*,*) current_level(i)%v1, current_level(i)%v2, current_level(i)%v3, current_level(i)%v4
-   end do
+   ! do i = 1, size(current_level)
+   !    write(*,*) current_level(i)%v1, current_level(i)%v2, current_level(i)%v3, current_level(i)%v4
+   ! end do
 
+   write(*,*) "Refining complete"
    ! Print total number of nodes
    write(*,*) "total number of nodes: ", num_nodes
 
