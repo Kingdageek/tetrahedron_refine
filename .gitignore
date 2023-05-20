@@ -1,5 +1,7 @@
 *.out
 *.o
 *.mod
-./src/compiled_modules/*
-./src/output/*
+*.exe
+./src/compiled_modules/
+./src/output/
+./src/input/
